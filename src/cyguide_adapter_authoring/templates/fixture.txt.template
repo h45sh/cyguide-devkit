@@ -1,0 +1,2 @@
+{{"target": "http://10.0.0.1", "status": 200, "message": "Discovered entry"}}
+{{"target": "http://10.0.0.1/admin", "status": 403, "message": "Restricted administrative route"}}

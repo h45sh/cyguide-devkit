@@ -1,0 +1,40 @@
+[meta]
+name = "{tool_name}"
+description = "{description}"
+one_line_summary = "{one_line_summary}"
+category = "{category}"
+categories = {categories}
+binary = "{binary}"
+
+[modes]
+learning = true
+power = true
+
+[input]
+accepts = {accepts}
+
+[output]
+produces = {produces}
+
+[learning]
+enabled = true
+
+[[learning.recipes]]
+name = "Standard {tool_title} Inspection"
+difficulty = "Beginner"
+description = "Execute a baseline non-intrusive scan against the target to discover active resources."
+flags = {default_flags}
+
+[learning.recipes.theory]
+concept = "{tool_title} Baseline Execution & Triage"
+explanation = """
+1. What the tool does: Interrogates the target using standard protocol probes.
+2. Flag selection: Target flag sets endpoint; structured flags format programmatic output.
+3. Response interpretation: Positive findings reveal reachable surfaces and misconfigurations.
+"""
+packet_wire_summary = "Client probe -> Target -> Response (Status / Banner)"
+remediation = "Enforce least-privilege exposure, disable unused ports, and restrict unauthorized access."
+
+[power]
+enabled = true
+suggests = []

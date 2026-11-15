@@ -1,0 +1,47 @@
+"""Hermetic parser unit test for {tool_name}."""
+
+from pathlib import Path
+import pytest
+
+from cyguide.schemas.base import BaseFinding
+from tools.{tool_name}.adapter import {class_name}
+
+
+@pytest.fixture
+def mock_target() -> BaseFinding:
+    """Create a dummy target finding."""
+    return BaseFinding(
+        schema_type="{primary_input_schema}",
+        pik={{"ip": "10.0.0.1", "url": "http://10.0.0.1"}},
+        data={{"ip": "10.0.0.1", "url": "http://10.0.0.1"}},
+    )
+
+
+def test_validate_install():
+    """Verify validate_install returns a boolean."""
+    adapter = {class_name}()
+    assert isinstance(adapter.validate_install(), bool)
+
+
+def test_build_command(mock_target):
+    """Verify command construction and argument list safety."""
+    adapter = {class_name}()
+    cmd = adapter.build_command(mock_target, params={{"raw_flags": "-v"}})
+    assert cmd[0] == "{binary}"
+    assert "-v" in cmd
+
+
+@pytest.mark.asyncio
+async def test_parse_output(mock_target):
+    """Verify output parsing against mock sample fixture."""
+    fixture_path = Path("tests/fixtures/mock_tools/{tool_name}.txt")
+    if not fixture_path.exists():
+        pytest.skip("Fixture not found")
+
+    content = fixture_path.read_text(encoding="utf-8")
+    adapter = {class_name}()
+    findings = [f async for f in adapter.parse_output(content, target=mock_target)]
+
+    assert len(findings) > 0
+    first = findings[0]
+    assert first.schema_type in [{produced_schemas_csv}]

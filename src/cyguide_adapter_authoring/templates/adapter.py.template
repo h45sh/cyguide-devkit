@@ -1,0 +1,71 @@
+"""{tool_title} tool adapter."""
+
+import json
+import re
+import shlex
+import shutil
+from typing import Any, AsyncIterator, Dict, List, Optional
+
+from cyguide.engine.adapter import ToolAdapter
+from cyguide.engine.wordlists import substitute_wordlist_macros
+from cyguide.schemas.base import BaseFinding
+{schema_imports}
+
+
+class {class_name}(ToolAdapter):
+    """Adapter for {tool_name}."""
+
+    def validate_install(self) -> bool:
+        """Verify binary is present in system PATH."""
+        return shutil.which("{binary}") is not None
+
+    def build_command(self, target: BaseFinding, params: Dict[str, Any]) -> List[str]:
+        """Construct CLI arguments safely as an argument list (preventing shell injection)."""
+        # 1. Extract target identifiers
+        target_val = (
+            target.pik.get("url")
+            or target.pik.get("ip")
+            or target.pik.get("domain")
+            or target.data.get("url")
+            or target.data.get("ip")
+        )
+        if not target_val:
+            raise ValueError(f"Target finding {{target.schema_type}} missing valid target value.")
+
+        # 2. Process user flags and expand wordlist macros
+        raw_flags = params.get("raw_flags", "").strip()
+        raw_flags, _ = substitute_wordlist_macros(raw_flags)
+        flag_args = shlex.split(raw_flags) if raw_flags else []
+
+        args = ["{binary}"]
+
+        # 3. Add default non-interactive flags if missing
+        if "{target_flag}" not in flag_args and "{target_flag}":
+            args.extend(["{target_flag}", str(target_val)])
+
+        args.extend(flag_args)
+        return args
+
+    async def parse_output(
+        self, raw_stdout: str, target: BaseFinding, context: Dict[str, Any] = None
+    ) -> AsyncIterator[BaseFinding]:
+        """Parse streaming raw stdout into typed finding models with graph parent wiring."""
+        cleaned = raw_stdout.strip()
+        if not cleaned:
+            return
+
+        host_ip = target.pik.get("host_ip") or target.pik.get("ip") or target.data.get("host_ip")
+
+        # 1. Handle JSON/JSONL stream
+        for line in cleaned.splitlines():
+            line = line.strip()
+            if not line or not line.startswith("{{"):
+                continue
+
+            try:
+                item = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+            # Yield primary finding model:
+            {primary_finding_yield}
