@@ -1,12 +1,12 @@
-"""Command-line interface for cyguide-adapter-authoring."""
+"""Command-line interface for cyguide-devkit."""
 
 import argparse
 from pathlib import Path
 import sys
 
-from cyguide_adapter_authoring.generator import scaffold_adapter
-from cyguide_adapter_authoring.schemas import SUPPORTED_SCHEMAS, SUPPORTED_WORDLISTS
-from cyguide_adapter_authoring.validator import validate_adapter_directory, validate_manifest_file
+from cyguide_devkit.generator import scaffold_adapter
+from cyguide_devkit.schemas import SUPPORTED_SCHEMAS, SUPPORTED_WORDLISTS
+from cyguide_devkit.validator import validate_adapter_directory, validate_manifest_file
 
 
 def cmd_new(args: argparse.Namespace) -> int:
@@ -33,7 +33,7 @@ def cmd_new(args: argparse.Namespace) -> int:
     print(f"  1. Edit {paths['manifest']} to refine recipes and protocol theory.")
     print(f"  2. Edit {paths['adapter']} to implement tool-specific parsing logic.")
     print(f"  3. Replace sample fixture in {paths['fixture']} with real tool output.")
-    print(f"  4. Run validation: cyguide-adapter-authoring validate {paths['manifest'].parent}")
+    print(f"  4. Run validation: cyguide-devkit validate {paths['manifest'].parent}")
     print(f"  5. Run pytest: pytest {paths['test']}")
     return 0
 
@@ -97,7 +97,7 @@ def cmd_list_wordlists(args: argparse.Namespace) -> int:
 def main(argv=None) -> int:
     """Entry point for CLI."""
     parser = argparse.ArgumentParser(
-        prog="cyguide-adapter-authoring",
+        prog="cyguide-devkit",
         description="Scaffolding and validation toolkit for CyGuide tool adapters",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)

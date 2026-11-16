@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 import pytest
 
-from cyguide_adapter_authoring.validator import (
+from cyguide_devkit.validator import (
     validate_manifest_content,
     validate_manifest_file,
     validate_adapter_directory,

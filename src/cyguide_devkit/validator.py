@@ -11,7 +11,7 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
-from cyguide_adapter_authoring.schemas import (
+from cyguide_devkit.schemas import (
     SUPPORTED_SCHEMAS,
     SUPPORTED_WORDLISTS,
     VALID_DIFFICULTIES,

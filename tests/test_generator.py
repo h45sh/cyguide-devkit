@@ -3,8 +3,8 @@
 import tempfile
 from pathlib import Path
 
-from cyguide_adapter_authoring.generator import scaffold_adapter
-from cyguide_adapter_authoring.validator import validate_adapter_directory
+from cyguide_devkit.generator import scaffold_adapter
+from cyguide_devkit.validator import validate_adapter_directory
 
 
 def test_scaffold_adapter():

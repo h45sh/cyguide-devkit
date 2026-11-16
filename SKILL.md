@@ -1,5 +1,5 @@
 ---
-name: adapter-authoring
+name: cyguide-devkit
 description: Expert skill for authoring comprehensive CyGuide tool adapters. Inspects CLI tools, authors typed manifest.toml with curriculum-grade recipes and protocol theory, implements adapter.py with JSON/regex streaming parsers and graph relation auto-wiring, and creates hermetic pytest fixtures.
 ---
 

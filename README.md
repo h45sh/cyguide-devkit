@@ -1,4 +1,4 @@
-# CyGuide Adapter Authoring Toolkit & Skill
+# CyGuide DevKit (`cyguide-devkit`)
 
 An independent toolkit, CLI utility, and agent skill for authoring, scaffolding, validating, and testing production-grade tool adapters for **[CyGuide](https://github.com/h45sh/cyguide)**.
 
@@ -17,7 +17,7 @@ tools/<tool_name>/
 └── cli.py                # (Optional) Pure-Python CLI entry point for bundled utilities
 ```
 
-This project (`cyguide-adapter-authoring`) provides both:
+This project (`cyguide-devkit`) provides both:
 1. **A Standalone CLI Tool**: To scaffold new adapters, validate manifest syntax & schemas, list schema definitions, and inspect wordlists.
 2. **An Agent Skill (`SKILL.md`)**: Designed for AI coding assistants (Antigravity, Claude, Codex, Gemini) to author deep, curriculum-grade tool adapters conforming strictly to CyGuide invariants.
 
@@ -28,8 +28,8 @@ This project (`cyguide-adapter-authoring`) provides both:
 Install directly with `pip` or use locally in editable mode:
 
 ```bash
-git clone https://github.com/h45sh/cyguide-adapter-authoring.git
-cd cyguide-adapter-authoring
+git clone https://github.com/h45sh/cyguide-devkit.git
+cd cyguide-devkit
 pip install -e .
 ```
 
@@ -43,7 +43,7 @@ Requires **Python 3.11+** (uses built-in `tomllib` with zero external runtime de
 Quickly bootstrap an adapter directory, manifest, parser implementation, sample fixture, and hermetic pytest suite:
 
 ```bash
-cyguide-adapter-authoring new masscan \
+cyguide-devkit new masscan \
   --target-dir /path/to/cyguide \
   --category "Network Discovery" \
   --categories network portscan recon \
@@ -64,24 +64,24 @@ Verify TOML syntax, required fields, curriculum recipe fields, theory blocks, an
 
 ```bash
 # Validate a specific tool directory
-cyguide-adapter-authoring validate /path/to/cyguide/tools/ffuf
+cyguide-devkit validate /path/to/cyguide/tools/ffuf
 
 # Validate a single manifest.toml file
-cyguide-adapter-authoring validate /path/to/cyguide/tools/nmap/manifest.toml
+cyguide-devkit validate /path/to/cyguide/tools/nmap/manifest.toml
 ```
 
 ### 3. List Registered Finding Schemas
 Display all valid finding schemas, primary identification keys (PIKs), and parent associations:
 
 ```bash
-cyguide-adapter-authoring list-schemas
+cyguide-devkit list-schemas
 ```
 
 ### 4. List Supported Wordlist Macros
 Display available centralized wordlist tokens:
 
 ```bash
-cyguide-adapter-authoring list-wordlists
+cyguide-devkit list-wordlists
 ```
 
 ---
@@ -102,7 +102,7 @@ Manifests must specify:
 ## Using as an Agent Skill
 
 Copy or link `SKILL.md` to your agent skills directory:
-* **Antigravity / Gemini / Claude**: Place in `.agents/skills/adapter-authoring/SKILL.md` or global agent configuration directory (`~/.agents/skills/adapter-authoring/`).
+* **Antigravity / Gemini / Claude**: Place in `.agents/skills/cyguide-devkit/SKILL.md` or global agent configuration directory (`~/.agents/skills/cyguide-devkit/`).
 * The skill provides exhaustive instructions on non-interactive flags, streaming JSON parsing, wordlist substitution, graph relationship auto-wiring, AI explainer category directives, optional output sanitization hooks (`sanitize_output`), and the repository ecosystem checklist.
 
 ---

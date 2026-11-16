@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 import pytest
 
-from cyguide_adapter_authoring.cli import main
+from cyguide_devkit.cli import main
 
 
 def test_cli_list_schemas(capsys):

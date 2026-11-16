@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 from typing import Dict, List, Optional, Tuple
 
-from cyguide_adapter_authoring.schemas import SUPPORTED_SCHEMAS
+from cyguide_devkit.schemas import SUPPORTED_SCHEMAS
 
 
 def to_pascal_case(name: str) -> str:
