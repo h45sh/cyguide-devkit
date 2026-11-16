@@ -17,7 +17,7 @@ Every tool plugin must adhere to this file layout:
 tools/<tool_name>/
 ├── __init__.py
 ├── manifest.toml         # Metadata, contracts, modes, and curriculum recipes
-├── adapter.py            # ToolAdapter implementation (build_command + parse_output)
+├── adapter.py            # ToolAdapter (build_command + parse_output + sanitize_output)
 └── cli.py                # (Optional) Pure-Python CLI entry point for bundled tools (e.g. dnspython)
 
 tests/fixtures/mock_tools/<tool_name>.(json|jsonl|txt)  # Raw sample output captured from tool
@@ -82,11 +82,21 @@ remediation = "Disable directory listings, enforce strict role-based access cont
   - `common_usernames`: Standard administrative and service usernames.
   - `common_passwords`: Default credentials and common passwords.
 
+### AI Explainer Category Directives:
+Manifest `categories` (e.g. `["web", "recon", "fuzzing"]`) are actively leveraged by CyGuide's AI Explainer engine ([`cyguide/engine/explainer.py`](../../cyguide/engine/explainer.py)). The engine matches declared category keywords against `CATEGORY_DIRECTIVES` to supply targeted pedagogical scaffolding to the AI Tutor during briefings and Q&A:
+* **`network`**: Focus on identified open ports, exposed services, transport protocol flags, default credentials risks, and flag mechanics.
+* **`recon`**: Analyze discovered targets, endpoints, subdomains, external network perimeter, and attack surface.
+* **`web`**: Highlight web application paths, HTTP status codes (200, 301, 401, 403), sensitive resources (`.env`, `.git`), and API endpoints.
+* **`vulnerability`**: Detail discovered vulnerability checks, severity ratings (CVSS), CVE identifiers, and actionable remediation steps.
+* **`osint`**: Examine registration details, ownership records, public intelligence, and DNS configurations.
+* **`dns`**: Assess DNS record configurations (A, MX, TXT, SPF, DMARC), zone delegation, and mail routing misconfigurations.
+* **`exploit`**: Assess exploit viability, target software versions, matching CVEs, and privilege escalation vectors.
+
 ---
 
 ## 3. Adapter Implementation Contract (`adapter.py`)
 
-All adapters inherit from `ToolAdapter` in [`cyguide/engine/adapter.py`](../../cyguide/engine/adapter.py) and implement three core methods:
+All adapters inherit from `ToolAdapter` in [`cyguide/engine/adapter.py`](../../cyguide/engine/adapter.py) and implement three core methods (plus an optional hook for output sanitization):
 
 ```python
 """<Tool Name> adapter."""
@@ -109,6 +119,17 @@ class ExampleAdapter(ToolAdapter):
     def validate_install(self) -> bool:
         """Verify binary is present in system PATH (or Python dependency is importable)."""
         return shutil.which("<binary_name>") is not None
+
+    def sanitize_output(self, raw_stdout: str) -> str:
+        """Strip tool-specific ASCII banners, progress lines, or noisy output before LLM prompting."""
+        lines = []
+        for line in raw_stdout.splitlines():
+            s = line.strip()
+            # Strip tool-specific ASCII art, progress meters, or loading logs:
+            if s.startswith("::") or "Progress: [" in s or s.startswith("____"):
+                continue
+            lines.append(line)
+        return "\n".join(lines)
 
     def build_command(self, target: BaseFinding, params: Dict[str, Any]) -> List[str]:
         """Construct CLI arguments safely as an argument list (preventing shell injection)."""
@@ -176,6 +197,7 @@ class ExampleAdapter(ToolAdapter):
 3. **Wordlist macro substitution**: If the tool takes wordlists, process flags through `substitute_wordlist_macros(raw_flags)` so users can write `{wordlist:common_dirs}` or `{wordlist}`.
 4. **Auto-wire graph relationships**: Extract the target's primary keys (`host_ip`, `port`, `url`, `domain`, `cve_id`) and pass them to the `.create(...)` factory of emitted child findings. This ensures the SQLite entity graph auto-wires parent and child nodes seamlessly.
 5. **Pure-Python adapters**: For tools implemented directly in Python (e.g. `dnspython`), `validate_install()` verifies the package can be imported, and `build_command()` invokes `sys.executable -m tools.<tool_name>.cli`.
+6. **Strip tool noise with `sanitize_output()` (Optional but recommended)**: Tool-specific ASCII art banners (e.g. `ffuf`, `nuclei`), template loading statistics, and progress bars waste valuable LLM prompt tokens and can confuse local AI models (such as Ollama 8B). Override `sanitize_output(self, raw_stdout: str) -> str` to strip tool-specific noise. CyGuide's core engine automatically cleans ANSI color escape sequences and invokes `adapter.sanitize_output(raw_output)` before feeding scan logs to the AI tutor. If omitted, the default `ToolAdapter` implementation returns `raw_stdout` untouched.
 
 ---
 
@@ -191,6 +213,7 @@ Every adapter must have a hermetic unit test that runs in CI without requiring t
    - Assert `len(findings) > 0`.
    - Assert specific field values, PIK dictionaries, data attributes, and parent relationship keys on the emitted findings.
    - Test handling of empty strings and malformed noisy output.
+   - Test `sanitize_output()` (if customized): Verify that ASCII art banners, progress lines, or noisy headers are stripped while leaving scan findings intact.
 
 ---
 
@@ -204,7 +227,7 @@ When creating or significantly updating an adapter, update all corresponding tou
 | **System Installer** | [`scripts/install_deps.sh`](../../scripts/install_deps.sh) | Add tool to apt, pacman, dnf, zypper, apk, and brew; add binary release installer function (`install_<tool>_release`); update `verify_tools`. |
 | **Docker Image** | [`Dockerfile`](../../Dockerfile) | Add package installation or binary release download to container build; copy `assets/ assets/`. |
 | **Mock Fixture** | [`tests/fixtures/mock_tools/<tool>.(json\|jsonl\|txt)`](../../tests/fixtures/mock_tools) | Raw sample output fixture for hermetic tests. |
-| **Parser Tests** | [`tests/unit/test_parsers/test_<tool>_parser.py`](../../tests/unit/test_parsers) | Unit tests verifying `validate_install`, `build_command`, and `parse_output`. |
+| **Parser Tests** | [`tests/unit/test_parsers/test_<tool>_parser.py`](../../tests/unit/test_parsers) | Unit tests verifying `validate_install`, `build_command`, `parse_output`, and `sanitize_output`. |
 | **Schema Registry** | [`scripts/generate_schema_registry.py`](../../scripts/generate_schema_registry.py) | If emitting any new finding schemas, update parent/association heuristics and run `--check`. |
 | **Documentation** | [`README.md`](../../README.md), [`docs/user/USER_MANUAL.md`](../../docs/user/USER_MANUAL.md) | Add the tool to the supported security tools list and package installation guides. |
 

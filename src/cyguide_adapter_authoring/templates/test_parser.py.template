@@ -23,6 +23,15 @@ def test_validate_install():
     assert isinstance(adapter.validate_install(), bool)
 
 
+def test_sanitize_output():
+    """Verify output sanitization returns clean string."""
+    adapter = {class_name}()
+    sample = "[+] Starting test scan\nProgress: [====>] 100%\n{{\"target\": \"http://10.0.0.1\"}}"
+    cleaned = adapter.sanitize_output(sample)
+    assert isinstance(cleaned, str)
+    assert "Progress: [" not in cleaned
+
+
 def test_build_command(mock_target):
     """Verify command construction and argument list safety."""
     adapter = {class_name}()

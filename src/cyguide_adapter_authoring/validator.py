@@ -186,6 +186,12 @@ def validate_adapter_directory(dir_path: Path) -> ValidationResult:
                             res.add_warning(
                                 f"Class '{cls.name}' in adapter.py might be missing method '{req_method}'"
                             )
+                    for n in cls.body:
+                        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == "sanitize_output":
+                            if isinstance(n, ast.AsyncFunctionDef):
+                                res.add_error(
+                                    f"Class '{cls.name}' in adapter.py defines 'sanitize_output' as async, but it must be synchronous"
+                                )
         except SyntaxError as e:
             res.add_error(f"Syntax error in adapter.py: {e}")
 

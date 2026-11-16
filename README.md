@@ -13,7 +13,7 @@ Every tool plugin lives in its own self-contained folder:
 tools/<tool_name>/
 ├── __init__.py
 ├── manifest.toml         # Declarative contracts, parameters, curriculum recipes, protocol theory
-├── adapter.py            # ToolAdapter (validate_install, build_command, parse_output)
+├── adapter.py            # ToolAdapter (validate_install, build_command, parse_output, sanitize_output)
 └── cli.py                # (Optional) Pure-Python CLI entry point for bundled utilities
 ```
 
@@ -89,7 +89,7 @@ cyguide-adapter-authoring list-wordlists
 ## Manifest Contract (`manifest.toml`)
 
 Manifests must specify:
-* `[meta]`: `name`, `description`, `one_line_summary`, `category`, `categories`, and `binary`.
+* `[meta]`: `name`, `description`, `one_line_summary`, `category`, `categories`, and `binary`. (Note: `categories` map to CyGuide AI Explainer directives: `network`, `recon`, `web`, `vulnerability`, `osint`, `dns`, `exploit`).
 * `[modes]`: `learning` and `power` booleans.
 * `[input].accepts`: Supported finding schemas (e.g. `network.host`, `web.endpoint`).
 * `[output].produces`: Emitted finding schemas (e.g. `web.endpoint`, `audit.misconfig`).
@@ -103,7 +103,7 @@ Manifests must specify:
 
 Copy or link `SKILL.md` to your agent skills directory:
 * **Antigravity / Gemini / Claude**: Place in `.agents/skills/adapter-authoring/SKILL.md` or global agent configuration directory (`~/.agents/skills/adapter-authoring/`).
-* The skill provides exhaustive instructions on non-interactive flags, streaming JSON parsing, wordlist substitution, graph relationship auto-wiring, and the repository ecosystem checklist.
+* The skill provides exhaustive instructions on non-interactive flags, streaming JSON parsing, wordlist substitution, graph relationship auto-wiring, AI explainer category directives, optional output sanitization hooks (`sanitize_output`), and the repository ecosystem checklist.
 
 ---
 

@@ -19,6 +19,20 @@ class {class_name}(ToolAdapter):
         """Verify binary is present in system PATH."""
         return shutil.which("{binary}") is not None
 
+    def sanitize_output(self, raw_stdout: str) -> str:
+        """
+        Optional tool-specific output sanitization before LLM prompting.
+        Strip tool-specific ASCII banners, progress bars, or noisy separator lines.
+        """
+        lines = []
+        for line in raw_stdout.splitlines():
+            s = line.strip()
+            # Strip tool-specific ASCII art, progress meters, or loading logs:
+            if s.startswith("::") or "Progress: [" in s or s.startswith("____"):
+                continue
+            lines.append(line)
+        return "\n".join(lines)
+
     def build_command(self, target: BaseFinding, params: Dict[str, Any]) -> List[str]:
         """Construct CLI arguments safely as an argument list (preventing shell injection)."""
         # 1. Extract target identifiers
