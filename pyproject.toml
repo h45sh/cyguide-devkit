@@ -11,6 +11,41 @@ authors = [{ name = "CyGuide Team" }]
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = []
+keywords = [
+    "cyguide",
+    "cybersecurity",
+    "security-tools",
+    "adapter-pattern",
+    "scaffolding",
+    "validation",
+    "agent-skills",
+    "cli",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio",
+]
+
+[project.urls]
+Homepage = "https://github.com/h45sh/cyguide"
+Repository = "https://github.com/h45sh/cyguide-devkit"
+Issues = "https://github.com/h45sh/cyguide-devkit/issues"
+Documentation = "https://github.com/h45sh/cyguide"
 
 [project.scripts]
 cyguide-devkit = "cyguide_devkit.cli:main"
@@ -23,3 +58,4 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]

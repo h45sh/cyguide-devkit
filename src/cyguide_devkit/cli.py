@@ -45,25 +45,86 @@ def cmd_validate(args: argparse.Namespace) -> int:
         print(f"[!] Target path does not exist: {target_path}", file=sys.stderr)
         return 1
 
-    if target_path.is_dir():
-        print(f"[*] Validating tool adapter plugin directory: {target_path}")
-        result = validate_adapter_directory(target_path)
-    else:
+    if not target_path.is_dir():
         print(f"[*] Validating manifest file: {target_path}")
         result = validate_manifest_file(target_path)
+        if result.warnings:
+            print("\n[!] Warnings:")
+            for w in result.warnings:
+                print(f"  - {w}")
+        if not result.is_valid:
+            print("\n[x] Validation Failed with errors:", file=sys.stderr)
+            for err in result.errors:
+                print(f"  - {err}", file=sys.stderr)
+            return 1
+        print("\n[✓] Manifest syntax and schema contracts are strictly valid!")
+        return 0
 
-    if result.warnings:
-        print("\n[!] Warnings:")
-        for w in result.warnings:
-            print(f"  - {w}")
+    # Directory validation: check if single adapter directory or batch container directory
+    if (target_path / "manifest.toml").exists():
+        print(f"[*] Validating tool adapter plugin directory: {target_path}")
+        result = validate_adapter_directory(target_path)
+        if result.warnings:
+            print("\n[!] Warnings:")
+            for w in result.warnings:
+                print(f"  - {w}")
+        if not result.is_valid:
+            print("\n[x] Validation Failed with errors:", file=sys.stderr)
+            for err in result.errors:
+                print(f"  - {err}", file=sys.stderr)
+            return 1
+        print("\n[✓] Manifest and adapter contracts are strictly valid!")
+        return 0
 
-    if not result.is_valid:
-        print("\n[x] Validation Failed with errors:", file=sys.stderr)
-        for err in result.errors:
-            print(f"  - {err}", file=sys.stderr)
+    # Batch validation for container directory (e.g. tools/)
+    candidates = []
+    for item in sorted(target_path.iterdir()):
+        if not item.is_dir() or item.name.startswith((".", "__")):
+            continue
+        if (item / "manifest.toml").exists() or (item / "adapter.py").exists():
+            candidates.append(item)
+
+    if not candidates:
+        print(f"[!] No tool adapters found in: {target_path}", file=sys.stderr)
         return 1
 
-    print("\n[✓] Manifest and adapter contracts are strictly valid!")
+    print(f"[*] Running batch validation across {len(candidates)} candidate tool adapter(s) in: {target_path}")
+    print("=" * 80)
+    print(f"{ 'Tool Adapter' :<24} | { 'Status' :<8} | { 'Errors' :<8} | { 'Warnings' :<8}")
+    print("-" * 80)
+
+    total_failed = 0
+    detailed_findings = []
+
+    for c in candidates:
+        res = validate_adapter_directory(c)
+        status_str = "PASS" if res.is_valid else "FAIL"
+        print(f"{c.name:<24} | {status_str:<8} | {len(res.errors):<8} | {len(res.warnings):<8}")
+        if not res.is_valid:
+            total_failed += 1
+            detailed_findings.append((c.name, res))
+        elif res.warnings:
+            detailed_findings.append((c.name, res))
+
+    print("-" * 80)
+    print(f"Total: {len(candidates)} | Passed: {len(candidates) - total_failed} | Failed: {total_failed}")
+    print("=" * 80)
+
+    if detailed_findings:
+        print("\nDetailed Findings:")
+        for name, res in detailed_findings:
+            header_status = "FAIL" if not res.is_valid else "WARN"
+            print(f"\n[{header_status}] {name}:")
+            for err in res.errors:
+                print(f"  - ERROR: {err}", file=sys.stderr)
+            for w in res.warnings:
+                print(f"  - WARNING: {w}")
+
+    if total_failed > 0:
+        print(f"\n[x] Batch validation failed ({total_failed} invalid adapter(s)).", file=sys.stderr)
+        return 1
+
+    print("\n[✓] All adapters in batch strictly passed validation!")
     return 0
 
 
@@ -72,7 +133,7 @@ def cmd_list_schemas(args: argparse.Namespace) -> int:
     print("===============================================================================")
     print(" CyGuide Registered Finding Schemas")
     print("===============================================================================")
-    print(f"{'Schema Type':<22} | {'Parent Finding':<28} | {'PIK Fields'}")
+    print(f"{ 'Schema Type' :<22} | { 'Parent Finding' :<28} | { 'PIK Fields' }")
     print("-" * 79)
     for schema, info in sorted(SUPPORTED_SCHEMAS.items()):
         print(f"{schema:<22} | {info['parent']:<28} | {info['pik']}")
@@ -85,7 +146,7 @@ def cmd_list_wordlists(args: argparse.Namespace) -> int:
     print("===============================================================================")
     print(" CyGuide Centralized Wordlist Macro Tokens")
     print("===============================================================================")
-    print(f"{'Macro Token':<30} | {'Description'}")
+    print(f"{ 'Macro Token' :<30} | { 'Description' }")
     print("-" * 79)
     for name, desc in sorted(SUPPORTED_WORDLISTS.items()):
         print(f"{{wordlist:{name}}}".ljust(30) + f" | {desc}")

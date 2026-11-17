@@ -1,19 +1,13 @@
-"""Validator for CyGuide tool manifests and adapter plugins."""
+"""Validation logic for CyGuide tool manifests and adapters."""
 
 import ast
 from pathlib import Path
 import re
-import sys
+import tomllib
 from typing import Any, Dict, List, Tuple
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 from cyguide_devkit.schemas import (
     SUPPORTED_SCHEMAS,
-    SUPPORTED_WORDLISTS,
     VALID_DIFFICULTIES,
     VALID_MACROS,
 )
@@ -153,6 +147,10 @@ def validate_manifest_file(file_path: Path) -> ValidationResult:
 def validate_adapter_directory(dir_path: Path) -> ValidationResult:
     """Validate a complete tool directory (manifest.toml, adapter.py, __init__.py)."""
     res = ValidationResult()
+    if dir_path.name.startswith((".", "__")):
+        res.add_error(f"Cannot validate internal or hidden directory: '{dir_path.name}'")
+        return res
+
     if not dir_path.is_dir():
         res.add_error(f"Directory not found: {dir_path}")
         return res
@@ -172,14 +170,22 @@ def validate_adapter_directory(dir_path: Path) -> ValidationResult:
         # Static AST inspection of adapter.py
         try:
             tree = ast.parse(adapter_path.read_text(encoding="utf-8"))
-            adapter_classes = []
-            for node in ast.walk(tree):
-                if isinstance(node, ast.ClassDef):
-                    adapter_classes.append(node)
+            adapter_classes = [node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
             if not adapter_classes:
                 res.add_error(f"adapter.py does not define any class: {adapter_path}")
             else:
-                for cls in adapter_classes:
+                # Filter for adapter class (ToolAdapter subclass or *Adapter name)
+                target_classes = [
+                    cls for cls in adapter_classes
+                    if any(
+                        (isinstance(b, ast.Name) and b.id == "ToolAdapter")
+                        or (isinstance(b, ast.Attribute) and b.attr == "ToolAdapter")
+                        for b in cls.bases
+                    ) or cls.name.endswith("Adapter")
+                ]
+                classes_to_check = target_classes if target_classes else adapter_classes
+
+                for cls in classes_to_check:
                     methods = {n.name for n in cls.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
                     for req_method in ["validate_install", "build_command", "parse_output"]:
                         if req_method not in methods:
@@ -192,8 +198,42 @@ def validate_adapter_directory(dir_path: Path) -> ValidationResult:
                                 res.add_error(
                                     f"Class '{cls.name}' in adapter.py defines 'sanitize_output' as async, but it must be synchronous"
                                 )
-        except SyntaxError as e:
-            res.add_error(f"Syntax error in adapter.py: {e}")
+
+            # AST Security Lint: Check for unsafe shell execution / command construction violations
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    # Check for shell=True keyword argument
+                    for kw in node.keywords:
+                        if kw.arg == "shell":
+                            if isinstance(kw.value, ast.Constant) and kw.value.value is True:
+                                res.add_error(
+                                    "adapter.py invokes process with shell=True (violates Command Construction Safety Contract)"
+                                )
+                    # Check for calls to unsafe functions
+                    func_name = ""
+                    if isinstance(node.func, ast.Attribute):
+                        val = node.func.value
+                        prefix = getattr(val, "id", "")
+                        func_name = f"{prefix}.{node.func.attr}" if prefix else node.func.attr
+                    elif isinstance(node.func, ast.Name):
+                        func_name = node.func.id
+
+                    if func_name in {
+                        "os.system",
+                        "system",
+                        "subprocess.getoutput",
+                        "getoutput",
+                        "subprocess.getstatusoutput",
+                        "getstatusoutput",
+                        "asyncio.create_subprocess_shell",
+                        "create_subprocess_shell",
+                    }:
+                        res.add_error(
+                            f"adapter.py invokes unsafe shell execution '{func_name}' (violates Command Construction Safety Contract)"
+                        )
+
+        except (SyntaxError, UnicodeDecodeError, OSError) as e:
+            res.add_error(f"Error reading or parsing adapter.py: {e}")
 
     init_path = dir_path / "__init__.py"
     if not init_path.exists():

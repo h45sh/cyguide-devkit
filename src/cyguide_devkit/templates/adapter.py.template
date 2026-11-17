@@ -16,25 +16,29 @@ class {class_name}(ToolAdapter):
     """Adapter for {tool_name}."""
 
     def validate_install(self) -> bool:
-        """Verify binary is present in system PATH."""
+        """Verify binary is present in system PATH (or Python dependency is importable)."""
         return shutil.which("{binary}") is not None
 
     def sanitize_output(self, raw_stdout: str) -> str:
         """
-        Optional tool-specific output sanitization before LLM prompting.
-        Strip tool-specific ASCII banners, progress bars, or noisy separator lines.
+        Optional tool-specific output sanitization hook called before feeding scan logs to the LLM tutor.
+        Strips ASCII art banners (figlet), carriage return progress meters, and noise to conserve prompt tokens.
+        ANSI color escape codes are already stripped by the core engine.
         """
         lines = []
         for line in raw_stdout.splitlines():
             s = line.strip()
-            # Strip tool-specific ASCII art, progress meters, or loading logs:
-            if s.startswith("::") or "Progress: [" in s or s.startswith("____"):
+            # Strip tool-specific ASCII banners, progress bars, or verbose headers
+            if s.startswith("::") or "Progress: [" in s or s.startswith("____") or s.startswith("====="):
                 continue
             lines.append(line)
         return "\n".join(lines)
 
     def build_command(self, target: BaseFinding, params: Dict[str, Any]) -> List[str]:
-        """Construct CLI arguments safely as an argument list (preventing shell injection)."""
+        """
+        Construct CLI arguments safely as an argument list (Command Construction Safety Contract).
+        NEVER concatenate into a single shell string or invoke shell=True.
+        """
         # 1. Extract target identifiers
         target_val = (
             target.pik.get("url")
@@ -44,7 +48,7 @@ class {class_name}(ToolAdapter):
             or target.data.get("ip")
         )
         if not target_val:
-            raise ValueError(f"Target finding {{target.schema_type}} missing valid target value.")
+            raise ValueError(f"Target finding {{target.schema_type}} missing valid target identifier.")
 
         # 2. Process user flags and expand wordlist macros
         raw_flags = params.get("raw_flags", "").strip()
@@ -53,7 +57,7 @@ class {class_name}(ToolAdapter):
 
         args = ["{binary}"]
 
-        # 3. Add default non-interactive flags if missing
+        # 3. Add default target flag and non-interactive parameters if missing
         if "{target_flag}" not in flag_args and "{target_flag}":
             args.extend(["{target_flag}", str(target_val)])
 
@@ -63,7 +67,14 @@ class {class_name}(ToolAdapter):
     async def parse_output(
         self, raw_stdout: str, target: BaseFinding, context: Dict[str, Any] = None
     ) -> AsyncIterator[BaseFinding]:
-        """Parse streaming raw stdout into typed finding models with graph parent wiring."""
+        """
+        Parse streaming raw stdout into typed finding models with graph parent auto-wiring.
+
+        Non-Zero Exit Code Resilience:
+        Security scanners (e.g. nikto, nuclei, nmap) frequently exit with status 1 or 2 when
+        vulnerabilities, open ports, or partial network issues occur. This parser MUST process
+        stdout and yield valid findings regardless of the exit code.
+        """
         cleaned = raw_stdout.strip()
         if not cleaned:
             return

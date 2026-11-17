@@ -24,7 +24,7 @@ def test_validate_install():
 
 
 def test_sanitize_output():
-    """Verify output sanitization returns clean string."""
+    """Verify output sanitization returns clean string without banners/noise."""
     adapter = {class_name}()
     sample = "[+] Starting test scan\nProgress: [====>] 100%\n{{\"target\": \"http://10.0.0.1\"}}"
     cleaned = adapter.sanitize_output(sample)
@@ -33,16 +33,18 @@ def test_sanitize_output():
 
 
 def test_build_command(mock_target):
-    """Verify command construction and argument list safety."""
+    """Verify command construction returns safe argument list without shell interpolation."""
     adapter = {class_name}()
     cmd = adapter.build_command(mock_target, params={{"raw_flags": "-v"}})
+    assert isinstance(cmd, list)
+    assert all(isinstance(arg, str) for arg in cmd)
     assert cmd[0] == "{binary}"
     assert "-v" in cmd
 
 
 @pytest.mark.asyncio
 async def test_parse_output(mock_target):
-    """Verify output parsing against mock sample fixture."""
+    """Verify output parsing against mock sample fixture (resilient to exit codes)."""
     fixture_path = Path("tests/fixtures/mock_tools/{tool_name}.txt")
     if not fixture_path.exists():
         pytest.skip("Fixture not found")
