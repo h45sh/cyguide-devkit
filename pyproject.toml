@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Scaffolding, schema validation, and authoring toolkit for CyGuide tool adapters"
 readme = "README.md"
 authors = [{ name = "CyGuide Team" }]
-license = { text = "MIT" }
+license = { file = "LICENSE" }
 requires-python = ">=3.11"
 dependencies = []
 keywords = [
