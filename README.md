@@ -25,9 +25,18 @@ This project (`cyguide-devkit`) provides:
 
 ## Installation
 
+### DevKit CLI Tool
+
 Install directly with `pip` or use locally in editable mode:
 
 ```bash
+# With pipx (recommended for standalone CLI usage):
+pipx install git+https://github.com/h45sh/cyguide-devkit.git
+
+# Or with pip:
+pip install git+https://github.com/h45sh/cyguide-devkit.git
+
+# Or clone and install locally in editable mode:
 git clone https://github.com/h45sh/cyguide-devkit.git
 cd cyguide-devkit
 pip install -e ".[dev]"
@@ -125,9 +134,36 @@ cyguide-devkit list-wordlists
 
 ## Using as an Agent Skill
 
-Copy or link `SKILL.md` to your agent skills directory:
-* **Antigravity / Gemini / Claude**: Place in `.agents/skills/cyguide-devkit/SKILL.md` or global agent configuration directory (`~/.agents/skills/cyguide-devkit/`).
-* The skill provides exhaustive instructions on non-interactive flags, streaming JSON parsing, wordlist substitution, graph relationship auto-wiring, AI explainer category directives, output sanitization hooks (`sanitize_output`), and the repository ecosystem checklist.
+Install the skill into your AI coding assistant (Antigravity, Claude Code, Cursor, Windsurf, Gemini, etc.) using one of the single-command options below:
+
+### Option 1: Via Skills CLI (`npx skills`) — Recommended
+
+Install globally for all detected coding agents:
+```bash
+npx skills add h45sh/cyguide-devkit -g -y
+```
+
+Or install locally in your current project repository:
+```bash
+npx skills add h45sh/cyguide-devkit -y
+```
+
+### Option 2: Single-Command Download (`curl`)
+
+Download `SKILL.md` directly into the agent skills directory without Node/npm:
+
+```bash
+# Global agent configuration (~/.agents/skills/cyguide-devkit/SKILL.md):
+curl -sSL --create-dirs https://raw.githubusercontent.com/h45sh/cyguide-devkit/main/SKILL.md -o ~/.agents/skills/cyguide-devkit/SKILL.md
+
+# Or local project directory (.agents/skills/cyguide-devkit/SKILL.md):
+curl -sSL --create-dirs https://raw.githubusercontent.com/h45sh/cyguide-devkit/main/SKILL.md -o .agents/skills/cyguide-devkit/SKILL.md
+```
+
+### Manual Installation
+Alternatively, copy or link `SKILL.md` manually to your agent skills directory (`~/.agents/skills/cyguide-devkit/SKILL.md` or `.agents/skills/cyguide-devkit/SKILL.md`).
+
+The skill provides exhaustive instructions on non-interactive flags, streaming JSON parsing, wordlist substitution, graph relationship auto-wiring, AI explainer category directives, output sanitization hooks (`sanitize_output`), and the repository ecosystem checklist.
 
 ---
 

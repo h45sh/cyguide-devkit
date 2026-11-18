@@ -49,9 +49,6 @@ Documentation = "https://github.com/h45sh/cyguide"
 
 [project.scripts]
 cyguide-devkit = "cyguide_devkit.cli:main"
-cydevkit = "cyguide_devkit.cli:main"
-adapter-authoring = "cyguide_devkit.cli:main"
-cyguide-adapter-authoring = "cyguide_devkit.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
